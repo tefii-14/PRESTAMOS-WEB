@@ -1,104 +1,145 @@
 <?php
+// Conexión a la base de datos y modelo
+require_once __DIR__ . '/../../../app/config/Database.php';
 require_once __DIR__ . '/../../../app/models/Beneficiario.php';
+
+$database = new Database();
+$db = $database->getConnection();
 $model = new Beneficiario();
-$lista = $model->listar();
+$beneficiarios = $model->listar();
 ?>
 
-<h2>Lista de Beneficiarios</h2>
+<h1 class="mb-4">Lista de Beneficiarios</h1>
 
 <!-- Botón para abrir el modal -->
-<button class="btn btn-success mb-3" data-bs-toggle="modal" data-bs-target="#modalCrear">+ Registrar Nuevo</button>
+<button type="button" class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#crearBeneficiarioModal">
+    + Registrar Nuevo
+</button>
 
-<table class="table table-bordered table-striped">
+<!-- Modal -->
+<div class="modal fade" id="crearBeneficiarioModal" tabindex="-1" aria-labelledby="crearBeneficiarioModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="crearBeneficiarioModalLabel">Registrar Beneficiario</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Formulario dentro del modal -->
+                <form id="formCrearBeneficiario" class="needs-validation" novalidate>
+                    <div class="mb-3">
+                        <label for="apellidos" class="form-label">Apellidos</label>
+                        <input type="text" class="form-control" id="apellidos" name="apellidos" required>
+                        <div class="invalid-feedback">Por favor, ingresa los apellidos.</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="nombres" class="form-label">Nombres</label>
+                        <input type="text" class="form-control" id="nombres" name="nombres" required>
+                        <div class="invalid-feedback">Por favor, ingresa los nombres.</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="dni" class="form-label">DNI</label>
+                        <input type="text" class="form-control" id="dni" name="dni" maxlength="8" required>
+                        <div class="invalid-feedback">Por favor, ingresa un DNI válido (8 dígitos).</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="telefono" class="form-label">Teléfono</label>
+                        <input type="text" class="form-control" id="telefono" name="telefono" maxlength="9" required>
+                        <div class="invalid-feedback">Por favor, ingresa un teléfono válido (9 dígitos).</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="direccion" class="form-label">Dirección (Opcional)</label>
+                        <input type="text" class="form-control" id="direccion" name="direccion">
+                    </div>
+                    <button type="submit" class="btn btn-primary">Registrar</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<table class="table table-bordered table-hover">
     <thead class="table-dark">
         <tr>
-            <th>ID</th>
+            <th>#</th>
             <th>Apellidos</th>
             <th>Nombres</th>
             <th>DNI</th>
             <th>Teléfono</th>
             <th>Dirección</th>
+            <th>Acciones</th>
         </tr>
     </thead>
-    <tbody>
-        <?php foreach ($lista as $b): ?>
+    <tbody id="tabla-beneficiarios">
+        <?php if (empty($beneficiarios)): ?>
             <tr>
-                <td><?= $b['idbeneficiario'] ?></td>
-                <td><?= $b['apellidos'] ?></td>
-                <td><?= $b['nombres'] ?></td>
-                <td><?= $b['dni'] ?></td>
-                <td><?= $b['telefono'] ?></td>
-                <td><?= $b['direccion'] ?></td>
+                <td colspan="7" class="text-center">No hay beneficiarios registrados.</td>
             </tr>
-        <?php endforeach; ?>
+        <?php else: ?>
+            <?php foreach ($beneficiarios as $beneficiario): ?>
+                <tr>
+                    <td><?php echo $beneficiario['idbeneficiario']; ?></td>
+                    <td><?php echo $beneficiario['apellidos']; ?></td>
+                    <td><?php echo $beneficiario['nombres']; ?></td>
+                    <td><?php echo $beneficiario['dni']; ?></td>
+                    <td><?php echo $beneficiario['telefono']; ?></td>
+                    <td><?php echo $beneficiario['direccion']; ?></td>
+                    <td>
+                        <a href="../contratos/crear.php?id=<?php echo $beneficiario['idbeneficiario']; ?>" class="btn btn-sm btn-success cargar-dinamico">Crear Contrato</a>
+                    </td>
+                </tr>
+            <?php endforeach; ?>
+        <?php endif; ?>
     </tbody>
 </table>
 
-<!-- Modal para crear beneficiario -->
-<div class="modal fade" id="modalCrear" tabindex="-1" aria-labelledby="modalCrearLabel" aria-hidden="true">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <form method="POST" id="formCrear">
-        <div class="modal-header">
-          <h5 class="modal-title" id="modalCrearLabel">Registrar Beneficiario</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-        </div>
-        <div class="modal-body">
-          <div class="mb-3">
-            <label class="form-label">Apellidos:</label>
-            <input name="apellidos" type="text" class="form-control" required>
-          </div>
-          <div class="mb-3">
-            <label class="form-label">Nombres:</label>
-            <input name="nombres" type="text" class="form-control" required>
-          </div>
-          <div class="mb-3">
-            <label class="form-label">DNI:</label>
-            <input name="dni" type="text" class="form-control" maxlength="8" required>
-          </div>
-          <div class="mb-3">
-            <label class="form-label">Teléfono:</label>
-            <input name="telefono" type="text" class="form-control" maxlength="9" required>
-          </div>
-          <div class="mb-3">
-            <label class="form-label">Dirección:</label>
-            <input name="direccion" type="text" class="form-control">
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-          <button type="submit" class="btn btn-primary">Guardar</button>
-        </div>
-      </form>
-    </div>
-  </div>
-</div>
-
-<!-- Script AJAX para guardar -->
 <script>
-document.getElementById('formCrear').addEventListener('submit', function (e) {
-  e.preventDefault();
+// Validación del formulario
+(function () {
+    'use strict';
+    var forms = document.querySelectorAll('.needs-validation');
+    Array.prototype.slice.call(forms).forEach(function (form) {
+        form.addEventListener('submit', function (event) {
+            if (!form.checkValidity()) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            form.classList.add('was-validated');
+        }, false);
+    });
+})();
 
-  const formData = new FormData(this);
+// Manejar el envío del formulario con AJAX
+document.getElementById('formCrearBeneficiario').addEventListener('submit', function (e) {
+    e.preventDefault();
 
-  fetch('beneficiarios/crear.php', {
-    method: 'POST',
-    body: formData
-  })
-  .then(res => {
-    if (res.ok) {
-      // Cierra el modal
-      const modal = bootstrap.Modal.getInstance(document.getElementById('modalCrear'));
-      modal.hide();
-      // Recarga la página para ver la nueva fila
-      location.reload();
-    } else {
-      alert('Error al guardar el beneficiario.');
-    }
-  })
-  .catch(err => {
-    console.error(err);
-    alert('Error en la solicitud.');
-  });
+    if (!this.checkValidity()) return;
+
+    const formData = new FormData(this);
+    fetch('/prestamos-web/public/views/beneficiarios/crear.php', {
+        method: 'POST',
+        body: formData
+    })
+    .then(res => {
+        if (!res.ok) throw new Error('Error al registrar');
+        return res.text();
+    })
+    .then(data => {
+        // Cerrar el modal
+        const modal = bootstrap.Modal.getInstance(document.getElementById('crearBeneficiarioModal'));
+        modal.hide();
+
+        // Recargar la lista de beneficiarios
+        fetch('/prestamos-web/public/views/beneficiarios/listar.php')
+            .then(res => res.text())
+            .then(html => {
+                document.getElementById('contenido-dinamico').innerHTML = html;
+                agregarEventos();
+            });
+    })
+    .catch(error => {
+        alert('Error al registrar el beneficiario: ' + error.message);
+    });
 });
 </script>
