@@ -16,7 +16,7 @@ $beneficiarios = $model->listar();
     + Registrar Nuevo
 </button>
 
-<!-- Modal -->
+<!-- Modal para registrar beneficiario -->
 <div class="modal fade" id="crearBeneficiarioModal" tabindex="-1" aria-labelledby="crearBeneficiarioModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -25,7 +25,6 @@ $beneficiarios = $model->listar();
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <!-- Formulario dentro del modal -->
                 <form id="formCrearBeneficiario" class="needs-validation" novalidate>
                     <div class="mb-3">
                         <label for="apellidos" class="form-label">Apellidos</label>
@@ -51,7 +50,7 @@ $beneficiarios = $model->listar();
                         <label for="direccion" class="form-label">Dirección (Opcional)</label>
                         <input type="text" class="form-control" id="direccion" name="direccion">
                     </div>
-                    <button type="submit" class="btn btn-primary">Registrar</button>
+                    <button type="submit" class="btn btn-primary">Confirmar Registro</button>
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
                 </form>
             </div>
@@ -86,60 +85,14 @@ $beneficiarios = $model->listar();
                     <td><?php echo $beneficiario['telefono']; ?></td>
                     <td><?php echo $beneficiario['direccion']; ?></td>
                     <td>
-                        <a href="../contratos/crear.php?id=<?php echo $beneficiario['idbeneficiario']; ?>" class="btn btn-sm btn-success cargar-dinamico">Crear Contrato</a>
+                        <?php if ($beneficiario['contratos_vigentes'] == 0): ?>
+                            <a href="/prestamos-web/public/views/contratos/listar.php?idbeneficiario=<?php echo $beneficiario['idbeneficiario']; ?>" class="btn btn-sm btn-success cargar-dinamico">Crear Contrato</a>
+                        <?php else: ?>
+                            <span class="text-muted">Contrato existente</span>
+                        <?php endif; ?>
                     </td>
                 </tr>
             <?php endforeach; ?>
         <?php endif; ?>
     </tbody>
 </table>
-
-<script>
-// Validación del formulario
-(function () {
-    'use strict';
-    var forms = document.querySelectorAll('.needs-validation');
-    Array.prototype.slice.call(forms).forEach(function (form) {
-        form.addEventListener('submit', function (event) {
-            if (!form.checkValidity()) {
-                event.preventDefault();
-                event.stopPropagation();
-            }
-            form.classList.add('was-validated');
-        }, false);
-    });
-})();
-
-// Manejar el envío del formulario con AJAX
-document.getElementById('formCrearBeneficiario').addEventListener('submit', function (e) {
-    e.preventDefault();
-
-    if (!this.checkValidity()) return;
-
-    const formData = new FormData(this);
-    fetch('/prestamos-web/public/views/beneficiarios/crear.php', {
-        method: 'POST',
-        body: formData
-    })
-    .then(res => {
-        if (!res.ok) throw new Error('Error al registrar');
-        return res.text();
-    })
-    .then(data => {
-        // Cerrar el modal
-        const modal = bootstrap.Modal.getInstance(document.getElementById('crearBeneficiarioModal'));
-        modal.hide();
-
-        // Recargar la lista de beneficiarios
-        fetch('/prestamos-web/public/views/beneficiarios/listar.php')
-            .then(res => res.text())
-            .then(html => {
-                document.getElementById('contenido-dinamico').innerHTML = html;
-                agregarEventos();
-            });
-    })
-    .catch(error => {
-        alert('Error al registrar el beneficiario: ' + error.message);
-    });
-});
-</script>

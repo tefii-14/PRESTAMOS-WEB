@@ -1,30 +1,48 @@
 <?php
-require_once __DIR__ . '/../config/Database.php';
-
 class Beneficiario {
     private $conn;
+    private $table_name = "beneficiarios";
 
     public function __construct() {
-        $db = new Database();
-        $this->conn = $db->getConnection();
+        $database = new Database();
+        $this->conn = $database->getConnection();
     }
 
     public function listar() {
-        $result = $this->conn->query("SELECT * FROM beneficiarios");
-        return $result->fetch_all(MYSQLI_ASSOC);
+        $query = "SELECT b.*, 
+                         (SELECT COUNT(*) FROM contratos c WHERE c.idbeneficiario = b.idbeneficiario AND c.estado = 'ACT') AS contratos_vigentes
+                  FROM " . $this->table_name . " b
+                  ORDER BY b.idbeneficiario DESC";
+        $stmt = $this->conn->prepare($query);
+        $stmt->execute();
+
+        $result = $stmt->get_result();
+        $beneficiarios = [];
+        while ($row = $result->fetch_assoc()) {
+            $beneficiarios[] = $row;
+        }
+        $stmt->close();
+        return $beneficiarios;
     }
 
     public function crear($data) {
-        $stmt = $this->conn->prepare("INSERT INTO beneficiarios (apellidos, nombres, dni, telefono, direccion)
-                                      VALUES (?, ?, ?, ?, ?)");
-        $stmt->bind_param(
-            "sssss",
+        $query = "INSERT INTO " . $this->table_name . " 
+                  (apellidos, nombres, dni, telefono, direccion) 
+                  VALUES (?, ?, ?, ?, ?)";
+        $stmt = $this->conn->prepare($query);
+
+        $direccion = $data['direccion'] ?? null;
+        $stmt->bind_param('sssss', 
             $data['apellidos'],
             $data['nombres'],
             $data['dni'],
             $data['telefono'],
-            $data['direccion']
+            $direccion
         );
-        return $stmt->execute();
+
+        $success = $stmt->execute();
+        $stmt->close();
+        return $success;
     }
 }
+?>

@@ -17,11 +17,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     ];
 
     if ($model->crear($data)) {
-        echo "Beneficiario registrado con éxito";
+        echo json_encode(['success' => true, 'message' => 'Beneficiario registrado con éxito']);
         exit;
     } else {
         http_response_code(500);
-        echo "Error al registrar el beneficiario";
+        echo json_encode(['success' => false, 'message' => 'Error al registrar el beneficiario']);
         exit;
     }
 }
