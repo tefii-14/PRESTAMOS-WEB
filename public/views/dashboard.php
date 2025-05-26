@@ -23,8 +23,8 @@ function cargarContenido(url) {
             return res.text();
         })
         .then(html => {
-            document.getElementById('contenido-dinamico').innerHTML = html;
-            // Limpiar cualquier clase residual de validación
+            const contenidoDinamico = document.getElementById('contenido-dinamico');
+            contenidoDinamico.innerHTML = html;
             const forms = document.querySelectorAll('.needs-validation');
             forms.forEach(form => form.classList.remove('was-validated'));
             agregarEventos();
@@ -166,15 +166,32 @@ function agregarEventos() {
             .then(data => {
                 console.log('Respuesta del servidor:', data); // Depurar respuesta
                 if (data.success) {
-                    const modal = bootstrap.Modal.getInstance(document.getElementById('crearContratoModal'));
-                    if (modal) {
-                        modal.hide();
+                    // Cierre robusto del modal
+                    const modalElement = document.getElementById('crearContratoModal');
+                    if (modalElement) {
+                        const modal = bootstrap.Modal.getInstance(modalElement);
+                        if (modal) {
+                            modal.hide();
+                        }
+                        // Forzar eliminación de clases y estilos del modal
+                        modalElement.classList.remove('show');
+                        modalElement.setAttribute('aria-hidden', 'true');
+                        modalElement.style.display = 'none';
+                        document.body.classList.remove('modal-open');
+                        // Eliminar manualmente el backdrop
+                        const backdrops = document.getElementsByClassName('modal-backdrop');
+                        while (backdrops.length > 0) {
+                            backdrops[0].parentNode.removeChild(backdrops[0]);
+                        }
                     }
 
-                    // Reiniciar el formulario y quitar la clase was-validated
+                    // Reiniciar el formulario y limpiar estilos residuales
                     formCrearContrato.reset();
                     formCrearContrato.classList.remove('was-validated');
+                    const contenidoDinamico = document.getElementById('contenido-dinamico');
+                    contenidoDinamico.classList.remove('was-validated');
 
+                    // Recargar la lista de contratos
                     fetch('/prestamos-web/public/views/contratos/listar.php')
                         .then(res => res.text())
                         .then(html => {
@@ -329,20 +346,29 @@ function agregarEventos() {
 }
 
 // Capturar clics en los enlaces de la navbar
-document.querySelector('a.nav-link[href*="beneficiarios"]').addEventListener('click', function (e) {
-    e.preventDefault();
-    cargarContenido('beneficiarios/listar.php');
-});
+const linkBeneficiarios = document.querySelector('a.nav-link[href*="beneficiarios"]');
+if (linkBeneficiarios) {
+    linkBeneficiarios.addEventListener('click', function (e) {
+        e.preventDefault();
+        cargarContenido('beneficiarios/listar.php');
+    });
+}
 
-document.querySelector('a.nav-link[href*="contratos"]').addEventListener('click', function (e) {
-    e.preventDefault();
-    cargarContenido('contratos/listar.php');
-});
+const linkContratos = document.querySelector('a.nav-link[href*="contratos"]');
+if (linkContratos) {
+    linkContratos.addEventListener('click', function (e) {
+        e.preventDefault();
+        cargarContenido('contratos/listar.php');
+    });
+}
 
-document.querySelector('a.nav-link[href*="pagos"]').addEventListener('click', function (e) {
-    e.preventDefault();
-    document.getElementById('contenido-dinamico').innerHTML = '<div class="alert alert-info">Funcionalidad de pagos aún no implementada.</div>';
-});
+const linkPagos = document.querySelector('a.nav-link[href*="pagos"]');
+if (linkPagos) {
+    linkPagos.addEventListener('click', function (e) {
+        e.preventDefault();
+        document.getElementById('contenido-dinamico').innerHTML = '<div class="alert alert-info">Funcionalidad de pagos aún no implementada.</div>';
+    });
+}
 </script>
 
 <?php include_once __DIR__ . '/../../public/partials/footer.php'; ?>

@@ -131,13 +131,14 @@ $idbeneficiario = isset($_GET['idbeneficiario']) ? $_GET['idbeneficiario'] : nul
             <th>Fecha de Inicio</th>
             <th>Día de Pago</th>
             <th>Número de Cuotas</th>
+            <th>Estado</th>
             <th>Acciones</th>
         </tr>
     </thead>
     <tbody id="tabla-contratos">
         <?php if (empty($contratos)): ?>
             <tr>
-                <td colspan="8" class="text-center">No hay contratos registrados.</td>
+                <td colspan="9" class="text-center">No hay contratos registrados.</td>
             </tr>
         <?php else: ?>
             <?php foreach ($contratos as $contrato): ?>
@@ -149,12 +150,13 @@ $idbeneficiario = isset($_GET['idbeneficiario']) ? $_GET['idbeneficiario'] : nul
                     <td><?php echo $contrato['fecha_inicio']; ?></td>
                     <td><?php echo $contrato['diapago']; ?></td>
                     <td><?php echo $contrato['numcuotas']; ?></td>
+                    <td><?php echo ($contrato['estado'] === 'ACT') ? 'Activo' : (($contrato['estado'] === 'FIN') ? 'Finalizado' : 'Desconocido'); ?></td>
                     <td>
                         <button class="btn btn-sm btn-info ver-detalles" data-id="<?php echo $contrato['idcontrato']; ?>">
                             <i class="bi bi-eye"></i>
                         </button>
                         <?php if ($contrato['estado'] === 'ACT'): ?>
-                            <button class="btn btn-sm btn-success registrar-pago" data-id="<?php echo $contrato['idcontrato']; ?>">
+                            <button class="btn btn-sm btn-success registrar-pago" data-id="<?php echo $contrato['idcontrato']; ?>" disabled>
                                 <i class="bi bi-currency-dollar"></i>
                             </button>
                         <?php endif; ?>
@@ -164,30 +166,3 @@ $idbeneficiario = isset($_GET['idbeneficiario']) ? $_GET['idbeneficiario'] : nul
         <?php endif; ?>
     </tbody>
 </table>
-
-<style>
-    /* Forzar fondo blanco en las filas de la tabla */
-    #tabla-contratos tr {
-        background-color: #ffffff !important; /* Fondo blanco forzado */
-    }
-    /* Asegurarnos de que was-validated no afecte a las filas */
-    .was-validated #tabla-contratos tr {
-        background-color: #ffffff !important; /* Fondo blanco incluso después de validar */
-    }
-    /* Evitar que los campos inválidos afecten el fondo de la tabla */
-    .needs-validation.was-validated .form-control:invalid {
-        background-color: #ffffff !important; /* Fondo blanco para campos inválidos */
-        border-color: #dc3545; /* Mantener el borde rojo para indicar error */
-    }
-    /* Estilo para el hover */
-    .table-hover #tabla-contratos tr:hover {
-        background-color: #f5f5f5 !important; /* Fondo gris claro solo al hacer hover */
-    }
-    /* Resetear estilos residuales de Bootstrap */
-    #contenido-dinamico .table {
-        background-color: transparent !important;
-    }
-    #contenido-dinamico .table tbody {
-        background-color: transparent !important;
-    }
-</style>
