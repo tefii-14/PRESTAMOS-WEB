@@ -10,8 +10,8 @@ include_once __DIR__ . '/../../public/partials/header.php';
 <div id="contenido-dinamico" class="mt-4 container"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script> <!-- Añadido para Bootstrap -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css"> <!-- Añadido para íconos -->
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
 <script>
 // Función para cargar contenido dinámico
 function cargarContenido(url) {
@@ -24,7 +24,9 @@ function cargarContenido(url) {
         })
         .then(html => {
             document.getElementById('contenido-dinamico').innerHTML = html;
-            // Volver a agregar eventos después de cargar el contenido
+            // Limpiar cualquier clase residual de validación
+            const forms = document.querySelectorAll('.needs-validation');
+            forms.forEach(form => form.classList.remove('was-validated'));
             agregarEventos();
         })
         .catch(error => {
@@ -53,6 +55,8 @@ function agregarEventos() {
                 if (!form.checkValidity()) {
                     event.preventDefault();
                     event.stopPropagation();
+                    form.classList.add('was-validated');
+                    return;
                 }
                 form.classList.add('was-validated');
             }, false);
@@ -65,7 +69,10 @@ function agregarEventos() {
         formCrearBeneficiario.addEventListener('submit', function (e) {
             e.preventDefault();
 
-            if (!this.checkValidity()) return;
+            if (!this.checkValidity()) {
+                alert('Por favor, completa todos los campos requeridos.');
+                return;
+            }
 
             if (!confirm('¿Estás seguro de registrar este beneficiario?')) {
                 return;
@@ -98,15 +105,25 @@ function agregarEventos() {
                         }
                     }
 
-                    fetch('/prestamos-web/public/views/beneficiarios/listar.php')
-                        .then(res => res.text())
-                        .then(html => {
-                            document.getElementById('contenido-dinamico').innerHTML = html;
-                            agregarEventos();
-                        })
-                        .catch(error => {
-                            alert('Error al actualizar la lista: ' + error.message);
-                        });
+                    // Reiniciar el formulario y quitar la clase was-validated
+                    formCrearBeneficiario.reset();
+                    formCrearBeneficiario.classList.remove('was-validated');
+
+                    // Preguntar si desea crear un contrato
+                    if (confirm('Beneficiario registrado con éxito. ¿Desea crear un contrato para este beneficiario?')) {
+                        const idbeneficiario = data.idbeneficiario;
+                        cargarContenido('contratos/listar.php?idbeneficiario=' + idbeneficiario);
+                    } else {
+                        fetch('/prestamos-web/public/views/beneficiarios/listar.php')
+                            .then(res => res.text())
+                            .then(html => {
+                                document.getElementById('contenido-dinamico').innerHTML = html;
+                                agregarEventos();
+                            })
+                            .catch(error => {
+                                alert('Error al actualizar la lista: ' + error.message);
+                            });
+                    }
                 } else {
                     alert(data.message);
                 }
@@ -123,24 +140,41 @@ function agregarEventos() {
         formCrearContrato.addEventListener('submit', function (e) {
             e.preventDefault();
 
-            if (!this.checkValidity()) return;
+            if (!this.checkValidity()) {
+                alert('Por favor, completa todos los campos requeridos.');
+                return;
+            }
 
             if (!confirm('¿Estás seguro de registrar este contrato?')) {
                 return;
             }
 
             const formData = new FormData(this);
+            // Depurar datos enviados
+            for (let [key, value] of formData.entries()) {
+                console.log(`${key}: ${value}`);
+            }
+
             fetch('/prestamos-web/public/views/contratos/crear.php', {
                 method: 'POST',
                 body: formData
             })
             .then(res => {
-                if (!res.ok) throw new Error('Error al registrar');
+                if (!res.ok) throw new Error('Error al registrar: ' + res.statusText);
                 return res.json();
             })
             .then(data => {
+                console.log('Respuesta del servidor:', data); // Depurar respuesta
                 if (data.success) {
-                    document.getElementById('contratoForm').style.display = 'none';
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('crearContratoModal'));
+                    if (modal) {
+                        modal.hide();
+                    }
+
+                    // Reiniciar el formulario y quitar la clase was-validated
+                    formCrearContrato.reset();
+                    formCrearContrato.classList.remove('was-validated');
+
                     fetch('/prestamos-web/public/views/contratos/listar.php')
                         .then(res => res.text())
                         .then(html => {
@@ -160,31 +194,6 @@ function agregarEventos() {
         });
     }
 
-    // Mostrar formulario de contrato al hacer clic
-    const crearContratoBtn = document.getElementById('crearContratoBtn');
-    if (crearContratoBtn) {
-        crearContratoBtn.addEventListener('click', function () {
-            document.getElementById('contratoForm').style.display = 'block';
-        });
-    }
-
-    // Cancelar formulario de contrato
-    const cancelarContrato = document.getElementById('cancelarContrato');
-    if (cancelarContrato) {
-        cancelarContrato.addEventListener('click', function () {
-            document.getElementById('contratoForm').style.display = 'none';
-            fetch('/prestamos-web/public/views/contratos/listar.php')
-                .then(res => res.text())
-                .then(html => {
-                    document.getElementById('contenido-dinamico').innerHTML = html;
-                    agregarEventos();
-                })
-                .catch(error => {
-                    alert('Error al actualizar la lista: ' + error.message);
-                });
-        });
-    }
-
     // Manejar el clic en "Ver Detalles"
     document.querySelectorAll('.ver-detalles').forEach(button => {
         button.addEventListener('click', function () {
@@ -199,21 +208,35 @@ function agregarEventos() {
             document.getElementById('modalFechaInicio').textContent = cells[4].textContent;
             document.getElementById('modalDiaPago').textContent = cells[5].textContent;
             document.getElementById('modalNumCuotas').textContent = cells[6].textContent;
-            document.getElementById('modalEstado').textContent = cells[7].textContent;
+            // Obtener el estado desde la base de datos a través de una consulta
+            fetch('/prestamos-web/public/views/contratos/crear.php?action=getEstado&idcontrato=' + encodeURIComponent(idcontrato))
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        document.getElementById('modalEstado').textContent = data.estado;
+                    } else {
+                        document.getElementById('modalEstado').textContent = 'Desconocido';
+                    }
+                    const modal = new bootstrap.Modal(document.getElementById('detalleContratoModal'));
+                    modal.show();
+                })
+                .catch(error => {
+                    document.getElementById('modalEstado').textContent = 'Error';
+                    const modal = new bootstrap.Modal(document.getElementById('detalleContratoModal'));
+                    modal.show();
+                    console.error('Error al obtener el estado:', error);
+                });
 
-            const modal = new bootstrap.Modal(document.getElementById('detalleContratoModal'));
-            modal.show();
-
-            // Manejar eliminación
+            // Manejar eliminación con diálogo simple
             const eliminarBtn = document.getElementById('eliminarContrato');
             eliminarBtn.onclick = function () {
                 if (confirm('¿Estás seguro de eliminar este contrato?')) {
-                    fetch('/prestamos-web/public/views/contratos/eliminar.php', {
+                    fetch('/prestamos-web/public/views/contratos/crear.php', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/x-www-form-urlencoded',
                         },
-                        body: 'idcontrato=' + encodeURIComponent(idcontrato)
+                        body: 'idcontrato=' + encodeURIComponent(idcontrato) + '&action=eliminar'
                     })
                     .then(res => {
                         if (!res.ok) throw new Error('Error al eliminar');
@@ -221,7 +244,10 @@ function agregarEventos() {
                     })
                     .then(data => {
                         if (data.success) {
-                            modal.hide();
+                            const modal = bootstrap.Modal.getInstance(document.getElementById('detalleContratoModal'));
+                            if (modal) {
+                                modal.hide();
+                            }
                             fetch('/prestamos-web/public/views/contratos/listar.php')
                                 .then(res => res.text())
                                 .then(html => {
@@ -242,6 +268,64 @@ function agregarEventos() {
             };
         });
     });
+
+    // Manejar el clic en "Registrar Pago"
+    document.querySelectorAll('.registrar-pago').forEach(button => {
+        button.addEventListener('click', function () {
+            const idcontrato = this.getAttribute('data-id');
+            document.getElementById('pagoIdContrato').value = idcontrato;
+
+            const modal = new bootstrap.Modal(document.getElementById('pagoModal'));
+            modal.show();
+        });
+    });
+
+    // Manejar el envío del formulario de pagos
+    const formRegistrarPago = document.getElementById('formRegistrarPago');
+    if (formRegistrarPago) {
+        formRegistrarPago.addEventListener('submit', function (e) {
+            e.preventDefault();
+
+            if (!this.checkValidity()) {
+                alert('Por favor, completa todos los campos requeridos.');
+                return;
+            }
+
+            if (!confirm('¿Estás seguro de registrar este pago?')) {
+                return;
+            }
+
+            const formData = new FormData(this);
+            fetch('/prestamos-web/public/views/pagos/crear.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(res => {
+                if (!res.ok) throw new Error('Error al registrar el pago');
+                return res.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('pagoModal'));
+                    modal.hide();
+                    fetch('/prestamos-web/public/views/contratos/listar.php')
+                        .then(res => res.text())
+                        .then(html => {
+                            document.getElementById('contenido-dinamico').innerHTML = html;
+                            agregarEventos();
+                        })
+                        .catch(error => {
+                            alert('Error al actualizar la lista: ' + error.message);
+                        });
+                } else {
+                    alert(data.message);
+                }
+            })
+            .catch(error => {
+                alert('Error al registrar el pago: ' + error.message);
+            });
+        });
+    }
 }
 
 // Capturar clics en los enlaces de la navbar

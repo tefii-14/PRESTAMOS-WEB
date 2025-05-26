@@ -1,4 +1,6 @@
 <?php
+require_once __DIR__ . '/../../app/config/Database.php';
+
 class Contrato {
     private $conn;
     private $table_name = "contratos";
@@ -13,6 +15,7 @@ class Contrato {
                          CONCAT(b.nombres, ' ', b.apellidos) AS beneficiario_nombre
                   FROM " . $this->table_name . " c
                   JOIN beneficiarios b ON c.idbeneficiario = b.idbeneficiario
+                  WHERE c.estado = 'ACT'
                   ORDER BY c.idcontrato DESC";
         $stmt = $this->conn->prepare($query);
         $stmt->execute();
@@ -38,25 +41,32 @@ class Contrato {
     }
 
     public function crear($data) {
+        // Verificar si el beneficiario ya tiene un contrato vigente
         if ($this->tieneContratoVigente($data['idbeneficiario'])) {
             return false;
         }
 
         $query = "INSERT INTO " . $this->table_name . " 
-                  (idbeneficiario, monto, interes, fechainicio, diapago, numcuotas) 
-                  VALUES (?, ?, ?, ?, ?, ?)";
+                  (idbeneficiario, monto, interes, fechainicio, diapago, numcuotas, estado, creado) 
+                  VALUES (?, ?, ?, ?, ?, ?, ?, NOW())";
         $stmt = $this->conn->prepare($query);
+
+        if (!$stmt) {
+            return false;
+        }
 
         $diapago = isset($data['diapago']) ? $data['diapago'] : 15;
         $numcuotas = isset($data['numcuotas']) ? $data['numcuotas'] : 12;
+        $estado = isset($data['estado']) ? $data['estado'] : 'ACT';
 
-        $stmt->bind_param('iddsii', 
+        $stmt->bind_param('iddsiis', 
             $data['idbeneficiario'],
             $data['monto'],
             $data['tasa_interes'],
             $data['fecha_inicio'],
             $diapago,
-            $numcuotas
+            $numcuotas,
+            $estado
         );
 
         $success = $stmt->execute();
