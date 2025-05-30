@@ -150,7 +150,7 @@ $idbeneficiario = isset($_GET['idbeneficiario']) ? $_GET['idbeneficiario'] : nul
                     <td><?php echo $contrato['fecha_inicio']; ?></td>
                     <td><?php echo $contrato['diapago']; ?></td>
                     <td><?php echo $contrato['numcuotas']; ?></td>
-                    <td><?php echo ($contrato['estado'] === 'ACT') ? 'Activo' : (($contrato['estado'] === 'FIN') ? 'Finalizado' : 'Desconocido'); ?></td>
+                    <td><?php echo ($contrato['estado'] === 'ACT') ? 'Activo' : (($contrato['estado'] === 'FIN') ? 'Finalizado'); ?></td>
                     <td>
                         <button class="btn btn-sm btn-info ver-detalles" data-id="<?php echo $contrato['idcontrato']; ?>">
                             <i class="bi bi-eye"></i>
