@@ -54,7 +54,7 @@ INSERT INTO contratos
 INSERT INTO pagos
 	(idcontrato, numcuota, fechapago, monto, penalidad, medio) VALUES
     (1, 1, '2025-04-15', 338.48, 0, 'EFC'),
-    (1, 2, '2025-05-15', 338.48, 33.85, 'DEP'),
+    (1, 2, '2025-05-17', 338.48, 33.85, 'DEP'),
     (1, 3, NULL, 338.48, 0, NULL),
     (1, 4, NULL, 338.48, 0, NULL),
     (1, 5, NULL, 338.48, 0, NULL),
@@ -80,3 +80,6 @@ SELECT COUNT(*) FROM pagos WHERE idcontrato = 1 AND medio = 'EFC';
 
 -- ¿cUANTO ES EL TOTAL DE PENALIDAD PAGADOS CON DEPOSITO?
 SELECT SUM(penalidad) FROM pagos WHERE idcontrato = 1 AND MEDIO = 'DEP';    
+
+
+select * from pagos;

@@ -41,34 +41,34 @@ class Contrato {
     }
 
     public function crear($data) {
-        // Verificar si el beneficiario ya tiene un contrato vigente
         if ($this->tieneContratoVigente($data['idbeneficiario'])) {
             return false;
         }
 
         $query = "INSERT INTO " . $this->table_name . " 
                   (idbeneficiario, monto, interes, fechainicio, diapago, numcuotas, estado, creado) 
-                  VALUES (?, ?, ?, ?, ?, ?, ?, NOW())";
+                  VALUES (?, ?, ?, ?, ?, ?, 'ACT', NOW())";
         $stmt = $this->conn->prepare($query);
+        if (!$stmt) return false;
 
-        if (!$stmt) {
-            return false;
-        }
-
-        $diapago = isset($data['diapago']) ? $data['diapago'] : 15;
-        $numcuotas = isset($data['numcuotas']) ? $data['numcuotas'] : 12;
-        $estado = isset($data['estado']) ? $data['estado'] : 'ACT';
-
-        $stmt->bind_param('iddsiis', 
+        $stmt->bind_param('iddsii', 
             $data['idbeneficiario'],
             $data['monto'],
             $data['tasa_interes'],
             $data['fecha_inicio'],
-            $diapago,
-            $numcuotas,
-            $estado
+            $data['diapago'],
+            $data['numcuotas']
         );
 
+        $success = $stmt->execute();
+        $stmt->close();
+        return $success;
+    }
+
+    public function eliminar($idcontrato) {
+        $query = "DELETE FROM " . $this->table_name . " WHERE idcontrato = ?";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bind_param('i', $idcontrato);
         $success = $stmt->execute();
         $stmt->close();
         return $success;

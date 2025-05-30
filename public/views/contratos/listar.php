@@ -1,20 +1,6 @@
-<?php
-// Conexión a la base de datos y modelo
-require_once __DIR__ . '/../../../app/config/Database.php';
-require_once __DIR__ . '/../../../app/models/Contrato.php';
-
-$database = new Database();
-$db = $database->getConnection();
-$model = new Contrato();
-$contratos = $model->listar();
-
-// Verificar si hay un idbeneficiario en la URL para crear un contrato
-$idbeneficiario = isset($_GET['idbeneficiario']) ? $_GET['idbeneficiario'] : null;
-?>
-
 <h1 class="mb-4">Lista de Contratos</h1>
 
-<?php if ($idbeneficiario): ?>
+<?php if (isset($_GET['idbeneficiario'])): ?>
     <div class="mb-3">
         <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#crearContratoModal">Crear Contrato para Beneficiario</button>
     </div>
@@ -29,7 +15,7 @@ $idbeneficiario = isset($_GET['idbeneficiario']) ? $_GET['idbeneficiario'] : nul
                 </div>
                 <div class="modal-body">
                     <form id="formCrearContrato" class="needs-validation" novalidate>
-                        <input type="hidden" id="idbeneficiario" name="idbeneficiario" value="<?php echo htmlspecialchars($idbeneficiario); ?>">
+                        <input type="hidden" id="idbeneficiario" name="idbeneficiario" value="<?php echo htmlspecialchars($_GET['idbeneficiario']); ?>">
                         <div class="mb-3">
                             <label for="monto" class="form-label">Monto (S/)</label>
                             <input type="number" step="0.01" class="form-control" id="monto" name="monto" required>
@@ -80,7 +66,6 @@ $idbeneficiario = isset($_GET['idbeneficiario']) ? $_GET['idbeneficiario'] : nul
                 <p><strong>Fecha de Inicio:</strong> <span id="modalFechaInicio"></span></p>
                 <p><strong>Día de Pago:</strong> <span id="modalDiaPago"></span></p>
                 <p><strong>Número de Cuotas:</strong> <span id="modalNumCuotas"></span></p>
-                <p><strong>Estado:</strong> <span id="modalEstado"></span></p>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-danger" id="eliminarContrato">
@@ -92,30 +77,35 @@ $idbeneficiario = isset($_GET['idbeneficiario']) ? $_GET['idbeneficiario'] : nul
     </div>
 </div>
 
-<!-- Modal para Registrar Pago -->
+<!-- Modal para Ver Cronograma -->
 <div class="modal fade" id="pagoModal" tabindex="-1" aria-labelledby="pagoModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="pagoModalLabel">Registrar Pago</h5>
+                <h5 class="modal-title" id="pagoModalLabel">Cronograma de Pagos - Contrato #<span id="pagoModalContratoId"></span></h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <form id="formRegistrarPago" class="needs-validation" novalidate>
-                    <input type="hidden" id="pagoIdContrato" name="idcontrato">
-                    <div class="mb-3">
-                        <label for="montoPago" class="form-label">Monto del Pago (S/)</label>
-                        <input type="number" step="0.01" class="form-control" id="montoPago" name="montoPago" required>
-                        <div class="invalid-feedback">Por favor, ingresa el monto del pago.</div>
-                    </div>
-                    <div class="mb-3">
-                        <label for="fechaPago" class="form-label">Fecha del Pago</label>
-                        <input type="date" class="form-control" id="fechaPago" name="fechaPago" required>
-                        <div class="invalid-feedback">Por favor, selecciona la fecha del pago.</div>
-                    </div>
-                    <button type="submit" class="btn btn-primary">Confirmar Pago</button>
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                </form>
+                <div class="container">
+                    <table class="table table-sm table-bordered" id="tabla-pagos">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Item</th>
+                                <th>Fecha de Pago</th>
+                                <th>Interés</th>
+                                <th>Abono Capital</th>
+                                <th>Valor Cuota</th>
+                                <th>Saldo Capital</th>
+                                <th>Penalidad</th>
+                                <th>Medio de Pago</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
             </div>
         </div>
     </div>
@@ -136,33 +126,6 @@ $idbeneficiario = isset($_GET['idbeneficiario']) ? $_GET['idbeneficiario'] : nul
         </tr>
     </thead>
     <tbody id="tabla-contratos">
-        <?php if (empty($contratos)): ?>
-            <tr>
-                <td colspan="9" class="text-center">No hay contratos registrados.</td>
-            </tr>
-        <?php else: ?>
-            <?php foreach ($contratos as $contrato): ?>
-                <tr>
-                    <td><?php echo $contrato['idcontrato']; ?></td>
-                    <td><?php echo $contrato['beneficiario_nombre']; ?></td>
-                    <td><?php echo number_format($contrato['monto'], 2); ?></td>
-                    <td><?php echo $contrato['tasa_interes']; ?></td>
-                    <td><?php echo $contrato['fecha_inicio']; ?></td>
-                    <td><?php echo $contrato['diapago']; ?></td>
-                    <td><?php echo $contrato['numcuotas']; ?></td>
-                    <td><?php echo ($contrato['estado'] === 'ACT') ? 'Activo' : (($contrato['estado'] === 'FIN') ? 'Finalizado'); ?></td>
-                    <td>
-                        <button class="btn btn-sm btn-info ver-detalles" data-id="<?php echo $contrato['idcontrato']; ?>">
-                            <i class="bi bi-eye"></i>
-                        </button>
-                        <?php if ($contrato['estado'] === 'ACT'): ?>
-                            <button class="btn btn-sm btn-success registrar-pago" data-id="<?php echo $contrato['idcontrato']; ?>" disabled>
-                                <i class="bi bi-currency-dollar"></i>
-                            </button>
-                        <?php endif; ?>
-                    </td>
-                </tr>
-            <?php endforeach; ?>
-        <?php endif; ?>
+        <!-- Los datos se cargan dinámicamente por JavaScript -->
     </tbody>
 </table>

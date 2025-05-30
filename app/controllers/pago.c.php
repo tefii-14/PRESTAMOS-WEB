@@ -1,8 +1,11 @@
 <?php
 
+use const Dom\NO_MODIFICATION_ALLOWED_ERR;
+
+//Clase->Método
 require_once '../models/helpers.php';
 
-if(isset($_GET['operation'])){
+if (isset($_GET['operation'])){
 
   switch ($_GET['operation']){
     case 'creaCronograma':
@@ -14,9 +17,9 @@ if(isset($_GET['operation'])){
       $tasa = floatval($_GET['tasa'])/100;
       $numeroCuotas = floatval($_GET['numeroCuotas']);
 
-      $tasaMensual = pow((1 + $tasa), (1 / 12)) - 1;
-      $cuota = round(Pago($tasa, $numeroCuotas, $monto),2);
+      $cuota = round(Pago($tasa, $numeroCuotas, $monto), 2);
 
+      //Fila 0
       echo "
       <tr>
         <td>0</td>
@@ -25,46 +28,62 @@ if(isset($_GET['operation'])){
         <td></td>
         <td></td>
         <td>{$monto}</td>
-      </tr>
-      ";
+      </tr>";
+
+      //Operaciones básicas
       $saldoCapital = $monto;
       $interesPeriodo = 0;
       $abonoCapital = 0;
 
+      //Acumuladores
+      $sumatoriaInteres = 0;
+
       for ($i = 1; $i <= $numeroCuotas; $i++){
-        $interesPeriodo = $saldoCapital * $tasa;
-        $abonoCapital = $cuota  - $interesPeriodo;
+
+        $interesPeriodo = $saldoCapital * $tasa; //i = 1
+        $abonoCapital = $cuota - $interesPeriodo;
         $saldoCapitalTemp = $saldoCapital - $abonoCapital;
 
-        $interesPeriodoPrint = number_format($interesPeriodo, 2, '.', ',');
-        $abonoCapitalPrint = number_format($abonoCapital, 2, '.', ',');
-        $cuotaPrint = number_format($cuota, 2, '.', ',');
-        $saldoCapitalTempPrint = number_format($saldoCapitalTemp, 2, '.', ',');
+        $sumatoriaInteres += $interesPeriodo;
 
-        if($i == $num)
+        //Variable a renderizar (mostrar HTML)
+        $interesPeriodoPrint = number_format($interesPeriodo, 2, '.', ',');
+        $abonoCapitalPrint = number_format($abonoCapital, 2, ".", ",");
+        $cuotaPrint = number_format($cuota, 2, ".", ",");
+        $saldoCapitalTempPrint = number_format($saldoCapitalTemp, 2, ".", ",");
+
+        //Última iteración
+        if ($i == $numeroCuotas){
+          $saldoCapitalTempPrint = 0.00;
+        }
 
         echo "
         <tr>
           <td>{$i}</td>
-          <td>dd-mm-aaaa</td>
-          <td>{$interesPeriodo}</td>
-          <td>{$abonoCapital}</td>
-          <td>{$cuota}</td>
-          <td>{$saldoCapitalTemp}</td>
-        </tr>
-      ";
+          <td>{$fechaInicio->format('d-m-Y')}</td>
+          <td>{$interesPeriodoPrint}</td>
+          <td>{$abonoCapitalPrint}</td>
+          <td>{$cuotaPrint}</td>
+          <td>{$saldoCapitalTempPrint}</td>
+        </tr>";
 
+        //Incremenar el mes
+        $fechaInicio->modify('+1 month');
+        $saldoCapital = $saldoCapitalTemp;
       }
 
-      /* var_dump($cuota); */
-      echo json_encode(
-        [
-          "cuota" => $cuota,
-          "numeroCuotas" => $numeroCuotas,
-          "monto" => $monto,
-          "tasaMensual" => $tasaMensual
-        ]
-      );
+      $sumatoriaInteresPrint = number_format($sumatoriaInteres, 2, ".", ",");
+
+      //Fila resumen (TOTALES)
+      echo "
+      <tr>
+        <td></td>
+        <td></td>
+        <td>{$sumatoriaInteresPrint}</td>
+        <td></td>
+        <td></td>
+        <td></td>
+      </tr>";
 
       break;
   }
